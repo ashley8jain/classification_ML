@@ -1,39 +1,64 @@
-trainf = fopen('r8-train-all-terms.txt','r');
-row = fgetl(trainf);
+% clc;clear;
+% 
+% 
+% trainf = fopen('r8-train-all-terms.txt','r');
+% 
+% catg_map = containers.Map;
+% dict_map = containers.Map;
+% catg_index=0;
+% word_index=0;
+% no_word_catg = ones(19983,8);
+% 
+% row = fgetl(trainf);
+% while ischar(row)
+%     splits = strsplit(row);
+%     if(~isKey(catg_map,char(splits(1))))
+%         catg_index=catg_index+1;
+%         catg_map(char(splits(1)))=catg_index;
+%         no_catgDocs(catg_index)=1;
+%     else        
+%         no_catgDocs(catg_map(char(splits(1))))=no_catgDocs(catg_map(char(splits(1))))+1;
+%     end
+%     for i = 2:length(splits)
+%        if(~isKey(dict_map,char(splits(i))))
+%            word_index=word_index+1;
+%            dict_map(char(splits(i)))=word_index;
+%        end
+%        no_word_catg(dict_map(char(splits(i))),catg_map(char(splits(1))))=no_word_catg(dict_map(char(splits(i))),catg_map(char(splits(1))))+1;
+%     end
+%     row = fgetl(trainf);
+% end
+% count_totWords_catg = sum(no_word_catg)+length(keys(dict_map));
+% 
+% 
+% fclose(trainf);
 
-catg_map = containers.Map;
-dict_map = containers.Map;
-catg_index=0;
-word_index=0;
+load('train')
+
+testf = fopen('r8-test-all-terms.txt','r');
+
+prob_allcatg=zeros(1,length(keys(catg_map)));
+row = fgetl(testf);
+acc=0;
+count_row=0;
 while ischar(row)
     splits = strsplit(row);
-    if(~isKey(catg_map,char(splits(1))))
-        catg_index=catg_index+1;
-        catg_map(char(splits(1)))=catg_index;
+    prob_allcatg=prob_allcatg+log(no_catgDocs/sum(no_catgDocs));
+    for i=2:length(splits)
+        if(~isKey(dict_map,char(splits(i))))
+            no_wordCatg = ones(1,length(keys(catg_map)));
+        else
+            no_wordCatg = no_word_catg(dict_map(char(splits(i))),:);
+        end    
+         prob_allcatg=prob_allcatg+log( no_wordCatg./count_totWords_catg );
     end
-    for i = 2:length(splits)
-       if(~isKey(dict_map,char(splits(i))))
-           word_index=word_index+1;
-           dict_map(char(splits(i)))=word_index;
-       end    
+    if(find(prob_allcatg==max(prob_allcatg))==catg_map(char(splits(1))))
+        acc=acc+1;
     end
+    count_row=count_row+1;
     row = fgetl(trainf);
 end
-fclose(trainf);
+acc/count_row
 
-trainf = fopen('r8-train-all-terms.txt','r');
-row = fgetl(trainf);
+fclose(testf);
 
-prob_catg=zeros(length(keys(catg_map)));
-prob_word_catg=zeros(length(keys(catg_map)),length(keys(dict_map)));
-no_catgDocs = zeros(length(keys(catg_map)));
-
-while ischar(row)
-    splits = strsplit(row);
-    no_catgDocs(catg_map(char(splits(1))))=no_catgDocs(catg_map(char(splits(1))))+1;
-    
-    row = fgetl(trainf);
-end
-
-
-fclose(trainf);
